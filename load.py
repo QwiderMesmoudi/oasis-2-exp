@@ -17,7 +17,7 @@ def main():
     # Load configuration
     params = load_params()
     raw_cfg = params['raw_data']
-    load_cfg = params['load_options']
+    load_cfg = params['data_load']
 
     # 1. Load and clean DataFrame
     df = pd.read_excel(raw_cfg['excel_path'])
