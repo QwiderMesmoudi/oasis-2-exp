@@ -1,4 +1,2 @@
-[core]
-    remote = myremote
-['remote "myremote"']
-    url = gdrive://1HxWGQjhkVPKh5qeqfi7YP_HLhVVqLr8l
+['remote "origin"']
+    url = https://dagshub.com/QwiderMesmoudi/oasis-2-exp.dvc
