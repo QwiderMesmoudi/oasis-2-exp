@@ -11,6 +11,7 @@ data_load:
   num_slices: 50
   n_splits: 5
   random_state: 42
+  output_path: "data/interim/metadata.csv"
   columns:
     - "Subject ID"
     - "MRI ID"
@@ -28,3 +29,5 @@ train:
 wandb:
   project: "mri-alzheimer-classification"
   name: "3d-cnn-baseline"
+
+ 
