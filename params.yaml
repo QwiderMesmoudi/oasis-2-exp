@@ -11,6 +11,10 @@ data_load:
   num_slices: 50
   n_splits: 5
   random_state: 42
+  columns:
+    - "Subject ID"
+    - "MRI ID"
+    - "CDR"
 
 train:
   learning_rate: 0.0001
