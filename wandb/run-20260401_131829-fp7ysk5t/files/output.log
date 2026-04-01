@@ -1,0 +1,23 @@
+WARNING:dvclive:Ignoring `save_dvc_exp` because `dvc repro` is running.
+Use `dvc exp run` to save experiment.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+model.safetensors: 100%|███████████████████| 21.4M/21.4M [00:01<00:00, 14.9MB/s]
+Fold 0 | Ep 0: 100%|██████████████████████████| 151/151 [01:28<00:00,  1.70it/s]
+Fold 0 Ep 0 | AUC: 0.6592 | Recall: 0.3333 | Spec: 0.8235
+Traceback (most recent call last):
+  File "/kaggle/working/oasis-2-exp/train.py", line 129, in <module>
+    main()
+  File "/kaggle/working/oasis-2-exp/train.py", line 121, in main
+    metrics = train_one_fold(fold, df.iloc[t_idx], df.iloc[v_idx], config, device, live)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/oasis-2-exp/train.py", line 97, in train_one_fold
+    torch.save(model.state_dict(), f"{config['train']['model_save_path']}best_fold_{fold_num}.pth")
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 976, in save
+    with _open_zipfile_writer(f) as opened_zipfile:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 838, in _open_zipfile_writer
+    return container(name_or_buffer)  # type: ignore[arg-type]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 802, in __init__
+    torch._C.PyTorchFileWriter(
+RuntimeError: Parent directory models does not exist.

@@ -1,0 +1,1 @@
+{"fold_0/epoch":0,"fold_0/val_loss":0.6197990650931994,"fold_0/lr":0.0001,"_wandb":{"runtime":113},"_timestamp":1.7750496249463704e+09,"fold_0/train_loss":1.1629142297357815,"fold_0/val_recall":0.3333333333333333,"_step":0,"_runtime":113,"fold_0/val_acc":0.6805555555555556,"fold_0/val_specificity":0.8235294117647058,"fold_0/val_auc":0.6591970121381886}

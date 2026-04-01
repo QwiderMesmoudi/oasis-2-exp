@@ -1,0 +1,46 @@
+{
+  "os":  "Linux-6.6.113+-x86_64-with-glibc2.35",
+  "python":  "CPython 3.12.12",
+  "startedAt":  "2026-04-01T13:34:06.560289Z",
+  "program":  "/kaggle/working/oasis-2-exp/train.py",
+  "codePath":  "train.py",
+  "codePathLocal":  "train.py",
+  "git":  {
+    "remote":  "https://github.com/QwiderMesmoudi/oasis-2-exp.git",
+    "commit":  "b6cce5444ade855b41af6d0014840119022f7a06"
+  },
+  "root":  "/kaggle/working/oasis-2-exp",
+  "host":  "5903cdd19060",
+  "executable":  "/usr/bin/python3",
+  "cpu_count":  2,
+  "cpu_count_logical":  4,
+  "gpu":  "Tesla T4",
+  "gpu_count":  2,
+  "disk":  {
+    "/":  {
+      "total":  "8656922775552",
+      "used":  "7346513014784"
+    }
+  },
+  "memory":  {
+    "total":  "33662472192"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "Tesla T4",
+      "memoryTotal":  "16106127360",
+      "cudaCores":  2560,
+      "architecture":  "Turing",
+      "uuid":  "GPU-1ae0d206-5033-5d33-8217-6b33d42a2f1b"
+    },
+    {
+      "name":  "Tesla T4",
+      "memoryTotal":  "16106127360",
+      "cudaCores":  2560,
+      "architecture":  "Turing",
+      "uuid":  "GPU-f8cfa49a-59b2-b08c-c2f5-0b6556734ff1"
+    }
+  ],
+  "cudaVersion":  "13.0",
+  "writerId":  "wuy0mc3c7znyp1c8id2jo36c0qouo2y6"
+}

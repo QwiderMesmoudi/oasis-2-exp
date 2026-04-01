@@ -1,0 +1,100 @@
+_wandb:
+    value:
+        cli_version: 0.25.0
+        e:
+            s29g5uwujl5twomplha51nb3dbminprp:
+                codePath: train.py
+                codePathLocal: train.py
+                cpu_count: 2
+                cpu_count_logical: 4
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "8656922775552"
+                        used: "7346512793600"
+                executable: /usr/bin/python3
+                git:
+                    commit: 1b000c187ff477b77c5af4e89cf0a52ed81891ad
+                    remote: https://github.com/QwiderMesmoudi/oasis-2-exp.git
+                gpu: Tesla T4
+                gpu_count: 2
+                gpu_nvidia:
+                    - architecture: Turing
+                      cudaCores: 2560
+                      memoryTotal: "16106127360"
+                      name: Tesla T4
+                      uuid: GPU-1ae0d206-5033-5d33-8217-6b33d42a2f1b
+                    - architecture: Turing
+                      cudaCores: 2560
+                      memoryTotal: "16106127360"
+                      name: Tesla T4
+                      uuid: GPU-f8cfa49a-59b2-b08c-c2f5-0b6556734ff1
+                host: 5903cdd19060
+                memory:
+                    total: "33662472192"
+                os: Linux-6.6.113+-x86_64-with-glibc2.35
+                program: /kaggle/working/oasis-2-exp/train.py
+                python: CPython 3.12.12
+                root: /kaggle/working/oasis-2-exp
+                startedAt: "2026-04-01T13:27:13.415590Z"
+                writerId: s29g5uwujl5twomplha51nb3dbminprp
+        m: []
+        python_version: 3.12.12
+        t:
+            "1":
+                - 1
+                - 5
+                - 41
+                - 49
+                - 53
+                - 63
+                - 105
+            "2":
+                - 1
+                - 5
+                - 41
+                - 49
+                - 53
+                - 63
+                - 105
+            "3":
+                - 13
+                - 16
+            "4": 3.12.12
+            "5": 0.25.0
+            "8":
+                - 2
+            "12": 0.25.0
+            "13": linux-x86_64
+data_load:
+    value:
+        columns:
+            - Subject ID
+            - MRI ID
+            - CDR
+        img_size: 224
+        metadata_path: data/interim/metadata.csv
+        n_splits: 5
+        num_slices: 50
+        output_path: data/interim/metadata.csv
+        random_state: 42
+raw_data:
+    value:
+        base_paths:
+            - /kaggle/input/datasets/qwidermesmoudi2025/oasis2-raw/OAS2_RAW_PART1/OAS2_RAW_PART1
+            - /kaggle/input/datasets/qwidermesmoudi2025/oasis2-raw/OAS2_RAW_PART2/OAS2_RAW_PART2
+        excel_path: /kaggle/input/datasets/qwidermesmoudi2025/demographic/oasis_longitudinal_demographics-8d83e569fa2e2d30.xlsx
+        img_relative_path: RAW/mpr-1.nifti.img
+train:
+    value:
+        backbone: efficientnet_b0
+        batch_size: 2
+        epochs: 30
+        learning_rate: 0.0001
+        model_save_path: models/
+        patience: 7
+        weight_decay: 1e-05
+wandb:
+    value:
+        name: 3d-cnn-baseline
+        project: mri-alzheimer-classification
