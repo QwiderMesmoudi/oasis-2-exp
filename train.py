@@ -94,7 +94,9 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
         scheduler.step(avg_val_loss)
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), f"{config['train']['model_save_path']}best_fold_{fold_num}.pth")
+            os.makedirs(config['train']['model_save_path'], exist_ok=True)
+            save_path = os.path.join(config['train']['model_save_path'], f"best_fold_{fold_num}.pth")
+            torch.save(model.state_dict(), save_path)
             early_stop_counter = 0
         else:
             early_stop_counter += 1
