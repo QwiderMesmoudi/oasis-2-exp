@@ -2,21 +2,23 @@ stages:
   load:
     cmd: python load.py
     deps:
-    - load.py
+      - load.py
     params:
-    - data_load
-    - raw_data
+      - data_load
+      - raw_data
     outs:
-    - data/interim/metadata.csv
+      - data/interim/metadata.csv
+
   train:
     cmd: python train.py
     deps:
-    - data/interim/metadata.csv
-    - model_utils.py
-    - train.py
+      - data/interim/metadata.csv
+      - model_utils.py
+      - train.py
     params:
-    - data_load
-    - train
-    - wandb
+      - data_load
+      - train
+      - wandb
     outs:
-    - models/
+      - models/
+      - dvclive/  # <--- Add this line here
