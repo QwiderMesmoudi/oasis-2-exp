@@ -1,2 +1,4 @@
 ['remote "origin"']
     url = https://dagshub.com/QwiderMesmoudi/oasis-2-exp.dvc
+    auth = basic
+    user = QwiderMesmoudi
