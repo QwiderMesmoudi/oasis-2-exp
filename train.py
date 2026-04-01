@@ -13,47 +13,31 @@ from sklearn.metrics import (
 )
 from tqdm import tqdm
 from dvclive import Live
-
-# Import our custom classes from model_utils.py
 from model_utils import MRIDataset, SliceModel
 
 def train_one_fold(fold_num, train_df, val_df, config, device, live):
-    """
-    Trains the model for a single fold and logs metrics to DVCLive.
-    """
-    # 1. Dataset & Loaders
-    train_ds = MRIDataset(
-        train_df, 
-        img_size=config['data_load']['img_size'], 
-        num_slices=config['data_load']['num_slices']
-    )
-    val_ds = MRIDataset(
-        val_df, 
-        img_size=config['data_load']['img_size'], 
-        num_slices=config['data_load']['num_slices']
-    )
+    # --- 1. Setup Data ---
+    train_ds = MRIDataset(train_df, img_size=config['data_load']['img_size'], num_slices=config['data_load']['num_slices'])
+    val_ds = MRIDataset(val_df, img_size=config['data_load']['img_size'], num_slices=config['data_load']['num_slices'])
     
     train_loader = DataLoader(train_ds, batch_size=config['train']['batch_size'], shuffle=True, num_workers=2)
     val_loader = DataLoader(val_ds, batch_size=config['train']['batch_size'], shuffle=False, num_workers=2)
 
-    # 2. Model, Optimizer, Loss
+    # --- 2. Setup Model ---
     model = SliceModel(config['train']['backbone']).to(device)
-    optimizer = torch.optim.AdamW(
-        model.parameters(), 
-        lr=float(config['train']['learning_rate']), 
-        weight_decay=float(config['train']['weight_decay'])
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=float(config['train']['learning_rate']), weight_decay=float(config['train']['weight_decay']))
     criterion = nn.BCEWithLogitsLoss()
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
 
     best_val_loss = float('inf')
     early_stop_counter = 0
 
-    # 3. Training Loop
+    # --- 3. Epoch Loop ---
     for epoch in range(config['train']['epochs']):
+        # Training Phase
         model.train()
         train_loss = 0
-        for x, y in tqdm(train_loader, desc=f"Fold {fold_num} | Epoch {epoch}"):
+        for x, y in tqdm(train_loader, desc=f"Fold {fold_num} | Ep {epoch}"):
             x, y = x.to(device), y.to(device).float()
             optimizer.zero_grad()
             preds = model(x).view(-1)
@@ -62,27 +46,18 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
             optimizer.step()
             train_loss += loss.item()
 
-        # 4. Validation Loop
+        # Validation Phase
         model.eval()
         val_loss, all_probs, all_labels = 0, [], []
-        
         with torch.no_grad():
-            for i, (x, y) in enumerate(val_loader):
+            for x, y in val_loader:
                 x, y = x.to(device), y.to(device).float()
                 outputs = model(x).view(-1)
-                
                 val_loss += criterion(outputs, y).item()
-                probs = torch.sigmoid(outputs)
-                all_probs.extend(probs.cpu().numpy())
+                all_probs.extend(torch.sigmoid(outputs).cpu().numpy())
                 all_labels.extend(y.cpu().numpy())
 
-                # --- 🖼️ OPTIONAL: Log MRI Slices to WandB (First Batch Only) ---
-                if i == 0 and epoch % 5 == 0: 
-                    # Log middle slice of the first brain in the batch
-                    sample_slice = x[0, config['data_load']['num_slices']//2, 0, :, :].cpu().numpy()
-                    live.log_image(f"mri_fold_{fold_num}.png", sample_slice)
-
-        # 5. Metric Calculations
+        # --- 📊 4. Metric Calculations ---
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
         all_labels, all_probs = np.array(all_labels), np.array(all_probs)
@@ -90,67 +65,65 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
         
         auc = roc_auc_score(all_labels, all_probs)
         acc = (preds_bin == all_labels).mean()
-
-        # 6. --- 📊 LOGGING WITH DVCLIVE ---
-        # We use a prefix to distinguish folds in the plots
-        live.log_metric(f"fold_{fold_num}/train_loss", avg_train_loss)
-        live.log_metric(f"fold_{fold_num}/val_loss", avg_val_loss)
-        live.log_metric(f"fold_{fold_num}/auc", auc)
-        live.log_metric(f"fold_{fold_num}/accuracy", acc)
+        recall = recall_score(all_labels, preds_bin, zero_division=0) # Sensitivity
         
-        # Advance the step for plots
+        # Specificity Calculation
+        tn, fp, fn, tp = confusion_matrix(all_labels, preds_bin, labels=[0, 1]).ravel()
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+
+        # --- 📈 5. Log to WandB (Live Charts) ---
+        wandb.log({
+            f"fold_{fold_num}/epoch": epoch,
+            f"fold_{fold_num}/train_loss": avg_train_loss,
+            f"fold_{fold_num}/val_loss": avg_val_loss,
+            f"fold_{fold_num}/val_auc": auc,
+            f"fold_{fold_num}/val_acc": acc,
+            f"fold_{fold_num}/val_recall": recall,
+            f"fold_{fold_num}/val_specificity": specificity,
+            f"fold_{fold_num}/lr": optimizer.param_groups[0]['lr']
+        })
+
+        # --- 📉 6. Log to DVCLive (VS Code Plots) ---
+        live.log_metric(f"fold_{fold_num}/auc", auc)
+        live.log_metric(f"fold_{fold_num}/val_loss", avg_val_loss)
         live.next_step()
 
-        print(f"Fold {fold_num} Ep {epoch} | Loss: {avg_val_loss:.4f} | AUC: {auc:.4f}")
+        print(f"Fold {fold_num} Ep {epoch} | AUC: {auc:.4f} | Recall: {recall:.4f} | Spec: {specificity:.4f}")
 
-        # 7. Scheduler & Early Stopping
+        # --- 7. Save Best Model & Early Stop ---
         scheduler.step(avg_val_loss)
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            os.makedirs(config['train']['model_save_path'], exist_ok=True)
             torch.save(model.state_dict(), f"{config['train']['model_save_path']}best_fold_{fold_num}.pth")
             early_stop_counter = 0
         else:
             early_stop_counter += 1
-            if early_stop_counter >= config['train']['patience']:
-                print("Early stopping.")
-                break
+            if early_stop_counter >= config['train']['patience']: break
             
-    return {"auc": auc, "acc": acc}
+    return {"auc": auc, "acc": acc, "recall": recall, "specificity": specificity}
 
 def main():
-    # Load configuration
     with open("params.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     df = pd.read_csv(config['data_load']['metadata_path'])
     
-    # Initialize DVCLive with WandB integration
-    # report="wandb" automatically syncs DVCLive metrics to your WandB dashboard
-    with Live(dir="dvclive", report="wandb") as live:
-        
-        # Cross-Validation Setup
-        sgkf = StratifiedGroupKFold(
-            n_splits=config['data_load']['n_splits'], 
-            shuffle=True, 
-            random_state=config['data_load']['random_state']
-        )
+    # Initialize WandB
+    wandb.init(project=config['wandb']['project'], name=config['wandb']['name'], config=config)
+
+    # Initialize DVCLive (Fixed: report="html")
+    with Live(dir="dvclive", report="html") as live:
+        sgkf = StratifiedGroupKFold(n_splits=config['data_load']['n_splits'], shuffle=True, random_state=config['data_load']['random_state'])
         
         scores = []
         for fold, (t_idx, v_idx) in enumerate(sgkf.split(df, df['label'], groups=df['Subject ID'])):
-            print(f"\n===== STARTING FOLD {fold} =====")
             metrics = train_one_fold(fold, df.iloc[t_idx], df.iloc[v_idx], config, device, live)
             scores.append(metrics)
 
-        # Log Final Summary Metrics
-        mean_auc = np.mean([s['auc'] for s in scores])
-        mean_acc = np.mean([s['acc'] for s in scores])
-        
-        live.log_metric("final/mean_auc", mean_auc, plot=False)
-        live.log_metric("final/mean_acc", mean_acc, plot=False)
-        
-        print(f"\nFinal CV AUC: {mean_auc:.4f}")
+        # Log Final Mean Metrics
+        final_auc = np.mean([s['auc'] for s in scores])
+        wandb.log({"final_mean_cv_auc": final_auc})
 
 if __name__ == "__main__":
     main()
