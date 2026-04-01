@@ -1,0 +1,84 @@
+schema: '2.0'
+stages:
+  load:
+    cmd: python load.py
+    deps:
+    - path: load.py
+      hash: md5
+      md5: 497a911782fdf0c039b6a6adad872301
+      size: 1310
+    params:
+      params.yaml:
+        data_load:
+          metadata_path: data/interim/metadata.csv
+          img_size: 224
+          num_slices: 50
+          n_splits: 5
+          random_state: 42
+          output_path: data/interim/metadata.csv
+          columns:
+          - Subject ID
+          - MRI ID
+          - CDR
+        raw_data:
+          excel_path: 
+            /kaggle/input/datasets/qwidermesmoudi2025/demographic/oasis_longitudinal_demographics-8d83e569fa2e2d30.xlsx
+          base_paths:
+          - /kaggle/input/datasets/qwidermesmoudi2025/oasis2-raw/OAS2_RAW_PART1/OAS2_RAW_PART1
+          - /kaggle/input/datasets/qwidermesmoudi2025/oasis2-raw/OAS2_RAW_PART2/OAS2_RAW_PART2
+          img_relative_path: RAW/mpr-1.nifti.img
+    outs:
+    - path: data/interim/metadata.csv
+      hash: md5
+      md5: db0382f759d9d89fbc41b817d3e875d3
+      size: 54864
+  train:
+    cmd: python train.py
+    deps:
+    - path: data/interim/metadata.csv
+      hash: md5
+      md5: db0382f759d9d89fbc41b817d3e875d3
+      size: 54864
+    - path: model_utils.py
+      hash: md5
+      md5: f54369b471147f7c0d902873af6da73c
+      size: 1777
+    - path: train.py
+      hash: md5
+      md5: 99df8904475d99156069bb58fac103cc
+      size: 5540
+    params:
+      params.yaml:
+        data_load:
+          metadata_path: data/interim/metadata.csv
+          img_size: 224
+          num_slices: 50
+          n_splits: 5
+          random_state: 42
+          output_path: data/interim/metadata.csv
+          columns:
+          - Subject ID
+          - MRI ID
+          - CDR
+        train:
+          learning_rate: 0.0001
+          weight_decay: 1e-05
+          batch_size: 2
+          epochs: 30
+          patience: 7
+          backbone: efficientnet_b0
+          model_save_path: models/
+        wandb:
+          project: mri-alzheimer-classification
+          name: 3d-cnn-baseline
+    outs:
+    - path: dvclive/
+      hash: md5
+      md5: a7dd538d6397e3447a0804152781e52b.dir
+      size: 38909
+      nfiles: 12
+    - path: models/
+      hash: md5
+      md5: cc3ea43b10c39d27c56b33b67762dbb3.dir
+      size: 81688195
+      nfiles: 5
