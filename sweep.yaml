@@ -1,0 +1,7 @@
+method: grid
+metric:
+  name: val_auc
+  goal: maximize
+parameters:
+  train.backbone: # Use dot notation
+    values: ["efficientnet_b0", "resnet18"]

@@ -1,3 +1,5 @@
+from logging import config
+
 import pandas as pd
 import numpy as np
 import torch
@@ -15,7 +17,7 @@ from tqdm import tqdm
 from dvclive import Live
 from model_utils import MRIDataset, SliceModel
 
-def train_one_fold(fold_num, train_df, val_df, config, device, live):
+def train_one_fold(fold_num, train_df, val_df, config,device, live):
     # --- 1. Setup Data ---
     train_ds = MRIDataset(train_df, img_size=config['data_load']['img_size'], num_slices=config['data_load']['num_slices'])
     val_ds = MRIDataset(val_df, img_size=config['data_load']['img_size'], num_slices=config['data_load']['num_slices'])
@@ -116,13 +118,17 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
 
 def main():
     with open("params.yaml", "r") as f:
-        config = yaml.safe_load(f)
+        base_config = yaml.safe_load(f)
+    # 3. Access the final config (merged defaults + sweep overrides)
+    run = wandb.init(project=base_config['wandb']['project'], name=base_config['wandb']['name'], config=base_config)
+    
 
+    config = run.config
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     df = pd.read_csv(config['data_load']['metadata_path'])
     
     # Initialize WandB
-    wandb.init(project=config['wandb']['project'], name=config['wandb']['name'], config=config)
 
     # Initialize DVCLive (Fixed: report="html")
     with Live(dir="dvclive", report="html") as live:
@@ -130,7 +136,7 @@ def main():
         
         scores = []
         for fold, (t_idx, v_idx) in enumerate(sgkf.split(df, df['label'], groups=df['Subject ID'])):
-            metrics = train_one_fold(fold, df.iloc[t_idx], df.iloc[v_idx], config, device, live)
+            metrics = train_one_fold(fold, df.iloc[t_idx], df.iloc[v_idx], config,  device, live)
             scores.append(metrics)
 
         # Log Final Mean Metrics
@@ -148,7 +154,7 @@ def main():
                    "precision":final_metrics['precision'],
                    "Sensitivity":final_metrics['recall'],
                    "Specificity":final_metrics['specificity'],
-                   "AUC":final_metrics['auc'],
+                   "val_auc":final_metrics['auc'],
                    "F1":final_metrics['f1'],
                    })
         
