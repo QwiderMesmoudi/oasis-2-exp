@@ -8,8 +8,8 @@ import wandb
 from torch.utils.data import DataLoader
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.metrics import (
-    roc_auc_score, f1_score, precision_score, 
-    recall_score, confusion_matrix
+    recall_score, roc_auc_score, f1_score, precision_score,accuracy_score
+    , confusion_matrix
 )
 from tqdm import tqdm
 from dvclive import Live
@@ -64,7 +64,9 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
         preds_bin = (all_probs > 0.5).astype(int)
         
         auc = roc_auc_score(all_labels, all_probs)
-        acc = (preds_bin == all_labels).mean()
+        acc = accuracy_score(all_labels, preds_bin)
+        val_f1 = f1_score(all_labels, preds_bin, zero_division=0)
+        val_precision = precision_score(all_labels, preds_bin, zero_division=0)
         recall = recall_score(all_labels, preds_bin, zero_division=0) # Sensitivity
         
         # Specificity Calculation
@@ -79,12 +81,19 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
             f"fold_{fold_num}/val_auc": auc,
             f"fold_{fold_num}/val_acc": acc,
             f"fold_{fold_num}/val_recall": recall,
+            f"fold_{fold_num}/val_precision": val_precision,
+            f"fold_{fold_num}/val_f1": val_f1,
             f"fold_{fold_num}/val_specificity": specificity,
             f"fold_{fold_num}/lr": optimizer.param_groups[0]['lr']
         })
 
         # --- 📉 6. Log to DVCLive (VS Code Plots) ---
         live.log_metric(f"fold_{fold_num}/auc", auc)
+        live.log_metric(f"fold_{fold_num}/acc", acc)
+        live.log_metric(f"fold_{fold_num}/recall", recall)
+        live.log_metric(f"fold_{fold_num}/precision", val_precision)
+        live.log_metric(f"fold_{fold_num}/f1", val_f1)
+        live.log_metric(f"fold_{fold_num}/specificity", specificity)
         live.log_metric(f"fold_{fold_num}/val_loss", avg_val_loss)
         live.next_step()
 
@@ -102,7 +111,8 @@ def train_one_fold(fold_num, train_df, val_df, config, device, live):
             early_stop_counter += 1
             if early_stop_counter >= config['train']['patience']: break
             
-    return {"auc": auc, "acc": acc, "recall": recall, "specificity": specificity}
+    return {"auc": auc, "acc": acc, "recall": recall, "specificity": specificity ,
+            "f1": val_f1, "precision": val_precision }
 
 def main():
     with open("params.yaml", "r") as f:
@@ -124,8 +134,25 @@ def main():
             scores.append(metrics)
 
         # Log Final Mean Metrics
-        final_auc = np.mean([s['auc'] for s in scores])
-        wandb.log({"final_mean_cv_auc": final_auc})
+        # Aggregate
+        final_metrics = {
+            k: np.mean([s[k] for s in scores]) for k in scores[0]
+            }
+
+        print("Final CV Metrics:", final_metrics)
+        
+        wandb.log({f"Dataset":"Oasis2",
+                   "Task":"Hc vs AD",
+                   "Model":config['train']['backbone'],
+                   "Acc":final_metrics['acc'],
+                   "precision":final_metrics['precision'],
+                   "Sensitivity":final_metrics['recall'],
+                   "Specificity":final_metrics['specificity'],
+                   "AUC":final_metrics['auc'],
+                   "F1":final_metrics['f1'],
+                   })
+        
+        wandb.finish()
 
 if __name__ == "__main__":
     main()

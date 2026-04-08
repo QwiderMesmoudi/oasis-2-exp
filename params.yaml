@@ -9,7 +9,7 @@ data_load:
   metadata_path: "data/interim/metadata.csv"
   img_size: 224
   num_slices: 50
-  n_splits: 5
+  n_splits: 2
   random_state: 42
   output_path: "data/interim/metadata.csv"
   columns:
